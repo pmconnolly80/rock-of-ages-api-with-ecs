@@ -165,7 +165,8 @@ cython_debug/
 context_portal/
 memory-bank/
 
-.roo/
-.roomodes
-context_portal/
-memory-bank/
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
