@@ -1,7 +1,7 @@
 name: Deploy to ECS
 
 on:
-  workflow_dispatch:  # Manual trigger
+  workflow_dispatch:
 
 permissions:
   id-token: write
@@ -12,23 +12,35 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Configure AWS credentials using OIDC
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v3
         with:
           role-to-assume: ${{ secrets.OIDC_ROLE_TO_ASSUME }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # 2️⃣ Force ECS service to deploy the latest task definition
-      - name: Update ECS service
+      - name: Update ECS services
         run: |
-          echo "Updating ECS service..."
+          echo "Updating ECS services..."
           aws ecs update-service \
             --cluster rock-of-ages-cluster \
             --service rock-of-ages-api-service \
-            --force-new-deployment
+            --force-new-deployment \
+            --no-cli-pager
 
-      # 3️⃣ Wait until desired number of tasks are running
-      - name: Wait for running tasks
+          aws ecs update-service \
+            --cluster rock-of-ages-cluster \
+            --service rock-of-ages-worker-service \
+            --force-new-deployment \
+            --no-cli-pager
+
+      - name: Wait for services to stabilize
         run: |
-          echo
+          echo "Waiting for api service..."
+          aws ecs wait services-stable \
+            --cluster rock-of-ages-cluster \
+            --services rock-of-ages-api-service
+
+          echo "Waiting for worker service..."
+          aws ecs wait services-stable \
+            --cluster rock-of-ages-cluster \
+            --services rock-of-ages-worker-service
